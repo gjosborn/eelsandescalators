@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -37,78 +36,112 @@ const eels = {
 };
 
 export const GameBoard = ({ playerPosition, onPositionUpdate }: GameBoardProps) => {
+  // State to track the visual position of the player (for animations)
   const [displayPosition, setDisplayPosition] = useState(playerPosition);
+  // State to indicate if the player piece is currently moving/animating
   const [isMoving, setIsMoving] = useState(false);
 
+  // Effect hook to handle player movement and eel/escalator interactions
   useEffect(() => {
+    // Only trigger movement if the player position has actually changed
     if (playerPosition !== displayPosition) {
       setIsMoving(true);
       
-      // Animate to new position
+      // First animation: move to the dice roll position
       setTimeout(() => {
         setDisplayPosition(playerPosition);
         
-        // Check for eels or escalators
+        // Check if the new position has an escalator or eel
         const escalatorDestination = escalators[playerPosition as keyof typeof escalators];
         const eelDestination = eels[playerPosition as keyof typeof eels];
         
+        // If there's an escalator at this position, move up after a delay
         if (escalatorDestination) {
           setTimeout(() => {
             setDisplayPosition(escalatorDestination);
             onPositionUpdate(escalatorDestination);
-          }, 800);
-        } else if (eelDestination) {
+          }, 800); // 800ms delay before escalator activation
+        } 
+        // If there's an eel at this position, slide down after a delay
+        else if (eelDestination) {
           setTimeout(() => {
             setDisplayPosition(eelDestination);
             onPositionUpdate(eelDestination);
-          }, 800);
+          }, 800); // 800ms delay before eel slide
         }
         
         setIsMoving(false);
-      }, 300);
+      }, 300); // 300ms for initial movement animation
     }
   }, [playerPosition, displayPosition, onPositionUpdate]);
 
+  /**
+   * Calculate the square number for a given row and column position
+   * The board follows a snake pattern: even rows go left-to-right, odd rows go right-to-left
+   * Row 0 (bottom) = squares 1-10, Row 1 = squares 11-20, etc.
+   */
   const getSquareNumber = (row: number, col: number) => {
-    const rowFromBottom = 9 - row;
+    const rowFromBottom = 9 - row; // Convert from top-down to bottom-up indexing
     if (rowFromBottom % 2 === 0) {
+      // Even rows (0, 2, 4, etc.): left to right numbering
       return rowFromBottom * 10 + col + 1;
     } else {
+      // Odd rows (1, 3, 5, etc.): right to left numbering
       return rowFromBottom * 10 + (10 - col);
     }
   };
 
+  /**
+   * Calculate the grid row and column position for a given square number
+   * This is used for CSS positioning of the player piece
+   */
   const getSquarePosition = (squareNum: number) => {
-    if (squareNum === 0) return { row: 10, col: -1 }; // Start position
+    // Handle starting position (before square 1)
+    if (squareNum === 0) return { row: 10, col: 0 };
     
+    // Convert square number to 0-based index
     const adjustedNum = squareNum - 1;
-    const row = Math.floor(adjustedNum / 10);
-    const rowFromBottom = 9 - row;
-    let col;
     
+    // Calculate which row from the bottom (0-9)
+    const rowFromBottom = Math.floor(adjustedNum / 10);
+    
+    // Convert to grid row (top-down, 0-9)
+    const row = 9 - rowFromBottom;
+    
+    let col;
+    // Determine column based on row direction (snake pattern)
     if (rowFromBottom % 2 === 0) {
+      // Even rows: left to right
       col = adjustedNum % 10;
     } else {
+      // Odd rows: right to left
       col = 9 - (adjustedNum % 10);
     }
     
     return { row, col };
   };
 
+  /**
+   * Check if a square has an eel (slide down)
+   */
   const hasEel = (squareNum: number) => {
     return eels[squareNum as keyof typeof eels] !== undefined;
   };
 
+  /**
+   * Check if a square has an escalator (climb up)
+   */
   const hasEscalator = (squareNum: number) => {
     return escalators[squareNum as keyof typeof escalators] !== undefined;
   };
 
+  // Get the current visual position of the player for CSS positioning
   const playerPos = getSquarePosition(displayPosition);
 
   return (
     <div className="bg-gradient-to-br from-yellow-200 to-yellow-300 p-6 rounded-2xl shadow-2xl border-4 border-yellow-400">
       <div className="grid grid-cols-10 gap-1 bg-yellow-100 p-4 rounded-xl relative">
-        {/* Board squares */}
+        {/* Generate the 10x10 grid of board squares */}
         {Array.from({ length: 10 }, (_, row) =>
           Array.from({ length: 10 }, (_, col) => {
             const squareNum = getSquareNumber(row, col);
@@ -120,23 +153,28 @@ export const GameBoard = ({ playerPosition, onPositionUpdate }: GameBoardProps) 
               <div
                 key={`${row}-${col}`}
                 className={cn(
+                  // Base square styling
                   "aspect-square rounded-lg border-2 flex items-center justify-center text-sm font-bold relative transition-all duration-300",
+                  // Alternating colors for checkerboard pattern
                   (row + col) % 2 === 0 ? "bg-blue-100 border-blue-200" : "bg-blue-50 border-blue-100",
+                  // Special colors for eels and escalators
                   isEel && "bg-red-200 border-red-300",
                   isEscalator && "bg-green-200 border-green-300",
+                  // Highlight when player is on this square
                   isPlayerHere && "ring-4 ring-yellow-400 ring-opacity-75"
                 )}
               >
+                {/* Square number */}
                 <span className="text-blue-800 z-10">{squareNum}</span>
                 
-                {/* Eel emoji */}
+                {/* Eel emoji for squares with eels */}
                 {isEel && (
                   <span className="absolute inset-0 flex items-center justify-center text-2xl opacity-60">
                     🐍
                   </span>
                 )}
                 
-                {/* Escalator emoji */}
+                {/* Escalator emoji for squares with escalators */}
                 {isEscalator && (
                   <span className="absolute inset-0 flex items-center justify-center text-2xl opacity-60">
                     🪜
@@ -147,17 +185,20 @@ export const GameBoard = ({ playerPosition, onPositionUpdate }: GameBoardProps) 
           })
         )}
         
-        {/* Player piece */}
+        {/* Player piece - only show if not at starting position */}
         {displayPosition > 0 && (
           <div
             className={cn(
               "absolute w-8 h-8 bg-yellow-400 rounded-full border-4 border-yellow-600 flex items-center justify-center text-lg font-bold transition-all duration-500 z-20 shadow-lg",
+              // Add animation effects when moving
               isMoving && "scale-110 animate-bounce"
             )}
             style={{
-              left: `${playerPos.col * 10 + 5}%`,
-              top: `${playerPos.row * 10 + 5}%`,
-              transform: "translate(-50%, -50%)"
+              // Position using percentage-based CSS positioning
+              // Each grid cell is 10% of the container width/height
+              left: `${(playerPos.col + 0.5) * (100 / 10)}%`,
+              top: `${(playerPos.row + 0.5) * (100 / 10)}%`,
+              transform: "translate(-50%, -50%)" // Center the piece on the square
             }}
           >
             🟡
@@ -175,7 +216,7 @@ export const GameBoard = ({ playerPosition, onPositionUpdate }: GameBoardProps) 
         </div>
       </div>
       
-      {/* Legend */}
+      {/* Legend explaining the game elements */}
       <div className="mt-4 flex justify-center space-x-6 text-sm">
         <div className="flex items-center space-x-1">
           <span>🪜</span>
