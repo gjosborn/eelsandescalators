@@ -1,1 +1,6 @@
 .venv/
+# any sub-directory with .venv or .env
+**/.venv/
+**/env
+**/.env
+__pycache__/

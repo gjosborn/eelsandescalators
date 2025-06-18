@@ -1,0 +1,10 @@
+services:
+  backend:
+    build:
+      dockerfile: docker/Dockerfile
+      context: ../
+    environment:
+      - APP_ENVIRONMENT=development
+      - API_INFO_PORT=8000
+    ports:
+      - 8000:8000
