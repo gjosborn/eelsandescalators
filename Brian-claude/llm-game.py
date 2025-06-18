@@ -7,6 +7,9 @@ import time
 pygame.init()
 pygame.mixer.init()
 
+eels_sound = pygame.mixer.Sound("Brian-claude/sounds/wah-wah-sad-trombone.mp3")
+escalators_sound = pygame.mixer.Sound("Brian-claude/sounds/yay.mp3")
+
 # Constants
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 800
@@ -339,11 +342,9 @@ class EelsAndEscalatorsGUI:
             elif self.new_game_button.is_clicked(pos):
                 self.game_state = "menu"
             elif self.escalators_sound_button.is_clicked(pos):
-                #TODO play sound
-                print("eels")
+                escalators_sound.play()
             elif self.eels_sound_button.is_clicked(pos):
-                #TODO play sound
-                print("escalators")
+                eels_sound.play()
             else:
                 # Start drag if player clicked
                 for name, data in self.players.items():
