@@ -5,6 +5,7 @@ import time
 
 # Initialize Pygame
 pygame.init()
+pygame.mixer.init()
 
 # Constants
 WINDOW_WIDTH = 1000
@@ -93,6 +94,8 @@ class EelsAndEscalatorsGUI:
         # Buttons
         self.roll_button = Button(700, 300, 120, 40, "Roll Dice", LIGHT_BLUE)
         self.new_game_button = Button(700, 350, 120, 40, "New Game", LIGHT_GRAY)
+        self.escalators_sound_button = Button(850, 300, 120, 40, "Escalators!", GREEN)
+        self.eels_sound_button = Button(850, 350, 120, 40, "Eeels :(", RED)
         self.player_buttons = []
         for i in range(4):
             self.player_buttons.append(
@@ -309,6 +312,8 @@ class EelsAndEscalatorsGUI:
         elif self.game_state == "playing":
             self.roll_button.draw(self.screen)
             self.new_game_button.draw(self.screen)
+            self.eels_sound_button.draw(self.screen)
+            self.escalators_sound_button.draw(self.screen)
             self.draw_dice()
         elif self.game_state == "game_over":
             winner_text = self.title_font.render(f"{self.winner} Wins!", True, RED)
@@ -333,6 +338,12 @@ class EelsAndEscalatorsGUI:
                 self.roll_dice()
             elif self.new_game_button.is_clicked(pos):
                 self.game_state = "menu"
+            elif self.escalators_sound_button.is_clicked(pos):
+                #TODO play sound
+                print("eels")
+            elif self.eels_sound_button.is_clicked(pos):
+                #TODO play sound
+                print("escalators")
             else:
                 # Start drag if player clicked
                 for name, data in self.players.items():
