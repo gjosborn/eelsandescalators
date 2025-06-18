@@ -7,8 +7,8 @@ import time
 pygame.init()
 pygame.mixer.init()
 
-eels_sound = pygame.mixer.Sound("Brian-claude/sounds/wah-wah-sad-trombone.mp3")
-escalators_sound = pygame.mixer.Sound("Brian-claude/sounds/yay.mp3")
+eels_sound = pygame.mixer.Sound("sounds/wah-wah-sad-trombone.mp3")
+escalators_sound = pygame.mixer.Sound("sounds/yay.mp3")
 
 # Constants
 WINDOW_WIDTH = 1000
