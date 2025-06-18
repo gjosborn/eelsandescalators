@@ -1,1 +1,73 @@
-.venv/
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+# React build output
+build/
+*.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# FastAPI / Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+dist/
+build/
+pip-wheel-metadata/
+*.sqlite3
+instance/
+*.db
+*.pot
+*.mo
+*.pyc
+*.pyo
+*.pyd
+*.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache/
+*.log
+
+# VSCode Python settings
+.vscode/settings.json
+
+# Postgres
+*.pgsql
+*.psql
+*.sql
+*.dump
+*.backup
+pgdata/
+postgres-data/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+venv/
