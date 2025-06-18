@@ -54,8 +54,10 @@ class Button:
     def is_clicked(self, pos):
         return self.rect.collidepoint(pos)
 
+
 class EelsAndEscalatorsGUI:
     def __init__(self):
+        self.pending_move = None
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("Eels and Escalators")
         self.clock = pygame.time.Clock()
@@ -69,6 +71,7 @@ class EelsAndEscalatorsGUI:
         self.winner = None
         self.animation_active = False
         self.animation_start_time = 0
+        self.dragging_player = None
         
         # Fonts
         self.title_font = pygame.font.Font(None, 48)
@@ -311,65 +314,53 @@ class EelsAndEscalatorsGUI:
             winner_text = self.title_font.render(f"{self.winner} Wins!", True, RED)
             self.screen.blit(winner_text, (700, 200))
             self.new_game_button.draw(self.screen)
-    
+
     def roll_dice(self):
-        """Roll the dice and move current player"""
         if self.animation_active:
             return
-            
         self.dice_value = random.randint(1, 6)
-        player_names = list(self.players.keys())
-        current_name = player_names[self.current_player]
-        current_player_data = self.players[current_name]
-        
-        old_position = current_player_data['position']
-        new_position = old_position + self.dice_value
-        
-        # Check if player would go beyond 100
-        if new_position > 100:
-            return  # Stay in place
-        
-        current_player_data['position'] = new_position
-        
-        # Check for escalators
-        if new_position in self.escalators:
-            current_player_data['position'] = self.escalators[new_position]
-        
-        # Check for eels
-        elif new_position in self.eels:
-            current_player_data['position'] = self.eels[new_position]
-        
-        self.update_player_positions()
-        
-        # Check for winner
-        if current_player_data['position'] >= 100:
-            self.winner = current_name
-            self.game_state = "game_over"
-            return
-        
-        # Next player's turn
-        self.current_player = (self.current_player + 1) % self.num_players
-    
+
     def handle_click(self, pos):
-        """Handle mouse clicks"""
         if self.game_state == "menu":
             for i, button in enumerate(self.player_buttons):
                 if button.is_clicked(pos):
                     self.num_players = i + 2
                     self.setup_game()
                     self.game_state = "playing"
-                    break
-        
+                    return
         elif self.game_state == "playing":
             if self.roll_button.is_clicked(pos):
                 self.roll_dice()
             elif self.new_game_button.is_clicked(pos):
                 self.game_state = "menu"
-        
-        elif self.game_state == "game_over":
-            if self.new_game_button.is_clicked(pos):
-                self.game_state = "menu"
-    
+            else:
+                # Start drag if player clicked
+                for name, data in self.players.items():
+                    x, y = data['x'], data['y']
+                    if math.hypot(pos[0] - x, pos[1] - y) <= 15:
+                        self.dragging_player = name
+                        break
+
+    def handle_mouse_event(self, event):
+        if self.dragging_player:
+            if event.type == pygame.MOUSEMOTION:
+                self.players[self.dragging_player]['x'], self.players[self.dragging_player]['y'] = event.pos
+            elif event.type == pygame.MOUSEBUTTONUP:
+                # Snap to closest square
+                px, py = event.pos
+                closest = 1
+                min_dist = float('inf')
+                for pos in range(1, 101):
+                    x, y = self.get_board_coordinates(pos)
+                    dist = math.hypot(px - x, py - y)
+                    if dist < min_dist:
+                        min_dist = dist
+                        closest = pos
+                self.players[self.dragging_player]['position'] = closest
+                self.update_player_positions()
+                self.dragging_player = None
+                self.pending_move = False
+
     def run(self):
         """Main game loop"""
         running = True
@@ -378,8 +369,10 @@ class EelsAndEscalatorsGUI:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    self.handle_click(event.pos)
+                elif event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION):
+                    self.handle_mouse_event(event)
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        self.handle_click(event.pos)
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE and self.game_state == "playing":
                         self.roll_dice()
@@ -400,10 +393,12 @@ class EelsAndEscalatorsGUI:
         
         pygame.quit()
 
+
 def main():
     """Main function to start the game"""
     game = EelsAndEscalatorsGUI()
     game.run()
+
 
 if __name__ == "__main__":
     main()
