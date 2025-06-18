@@ -1,10 +1,10 @@
-
 import { useState, useCallback } from "react";
 import { GameBoard } from "@/components/GameBoard";
 import { DiceRoller } from "@/components/DiceRoller";
 import { GameControls } from "@/components/GameControls";
 import { WinModal } from "@/components/WinModal";
 import { toast } from "sonner";
+import RegisterModal from "../components/Register";
 
 export interface GameState {
   playerPosition: number;
@@ -14,6 +14,17 @@ export interface GameState {
   moveHistory: number[];
 }
 
+const closeButtonStyle: React.CSSProperties = {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    background: "none",
+    border: "none",
+    fontSize: 20,
+    cursor: "pointer",
+    color: "#888",
+};
+
 const Index = () => {
   const [gameState, setGameState] = useState<GameState>({
     playerPosition: 0,
@@ -22,6 +33,9 @@ const Index = () => {
     hasWon: false,
     moveHistory: []
   });
+
+  // State to control RegisterModal visibility
+  const [isRegisterOpen, setRegisterOpen] = useState(false);
 
   const handleDiceRoll = useCallback((diceValue: number) => {
     if (!gameState.isGameActive || gameState.isRolling) return;
@@ -76,14 +90,23 @@ const Index = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8 relative z-10">
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 flex items-center justify-center relative">
           <h1 className="text-5xl font-bold text-yellow-300 mb-2 drop-shadow-lg">
             🪜 Eels and Escalators 🐍
           </h1>
-          <p className="text-xl text-blue-100 drop-shadow">
-            The classic Bikini Bottom board game adventure!
-          </p>
+          <button
+            className="ml-4 px-4 py-2 bg-yellow-400 text-blue-900 font-semibold rounded shadow hover:bg-yellow-300 transition"
+            onClick={() => setRegisterOpen(true)}
+            type="button"
+          >
+            Register
+          </button>
+          {/* RegisterModal controlled by local state */}
+          <RegisterModal open={isRegisterOpen} onClose={() => setRegisterOpen(false)} />
         </div>
+        <p className="text-xl text-blue-100 drop-shadow text-center mb-8">
+          The classic Bikini Bottom board game adventure!
+        </p>
 
         <div className="grid lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
           {/* Game Board */}
