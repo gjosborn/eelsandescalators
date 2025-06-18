@@ -7,11 +7,14 @@ import { toast } from "sonner";
 import RegisterModal from "../components/Register";
 
 export interface GameState {
-  playerPosition: number;
+  playerPositions: number[];
   isGameActive: boolean;
   isRolling: boolean;
   hasWon: boolean;
-  moveHistory: number[];
+  moveHistory: number[][];
+  currentPlayer: number;
+  winners: number[];
+  playerNames: string[];
 }
 
 const closeButtonStyle: React.CSSProperties = {
@@ -27,56 +30,78 @@ const closeButtonStyle: React.CSSProperties = {
 
 const Index = () => {
   const [gameState, setGameState] = useState<GameState>({
-    playerPosition: 0,
-    isGameActive: true,
+    playerPositions: [0, 0],
+    isGameActive: false,
     isRolling: false,
     hasWon: false,
-    moveHistory: []
+    moveHistory: [[], []],
+    currentPlayer: 0,
+    winners: [],
+    playerNames: ["Player 1", "Player 2"]
   });
 
-  // State to control RegisterModal visibility
-  const [isRegisterOpen, setRegisterOpen] = useState(false);
+  const [isRegisterOpen, setRegisterOpen] = useState(true);
 
-  const handleDiceRoll = useCallback((diceValue: number) => {
-    if (!gameState.isGameActive || gameState.isRolling) return;
-
-    setGameState(prev => ({ ...prev, isRolling: true }));
-    
-    setTimeout(() => {
-      const newPosition = Math.min(gameState.playerPosition + diceValue, 100);
-      const hasWon = newPosition === 100;
-      
-      setGameState(prev => ({
-        ...prev,
-        playerPosition: newPosition,
-        isRolling: false,
-        hasWon,
-        isGameActive: !hasWon,
-        moveHistory: [...prev.moveHistory, diceValue]
-      }));
-
-      if (hasWon) {
-        toast.success("🎉 Congratulations! You've reached the top!");
-      }
-    }, 1500);
-  }, [gameState.playerPosition, gameState.isGameActive, gameState.isRolling]);
-
-  const resetGame = useCallback(() => {
+  const handleRegister = (names: string[]) => {
     setGameState({
-      playerPosition: 0,
+      playerPositions: Array(names.length).fill(0),
       isGameActive: true,
       isRolling: false,
       hasWon: false,
-      moveHistory: []
+      moveHistory: Array(names.length).fill([]),
+      currentPlayer: 0,
+      winners: [],
+      playerNames: names
     });
-    toast.info("🔄 New game started!");
+    setRegisterOpen(false);
+  };
+
+  const handleDiceRoll = useCallback((diceValue: number) => {
+    if (!gameState.isGameActive || gameState.isRolling) return;
+    const { currentPlayer, playerPositions, winners, playerNames, moveHistory } = gameState;
+    if (winners.includes(currentPlayer)) return;
+    setGameState(prev => ({ ...prev, isRolling: true }));
+    setTimeout(() => {
+      const newPositions = [...playerPositions];
+      const newMoveHistory = moveHistory.map(arr => [...arr]);
+      const newWinners = [...winners];
+      const pos = Math.min(newPositions[currentPlayer] + diceValue, 100);
+      newPositions[currentPlayer] = pos;
+      newMoveHistory[currentPlayer].push(diceValue);
+      let hasWon = false;
+      if (pos === 100) {
+        newWinners.push(currentPlayer);
+        toast.success(`🎉 ${playerNames[currentPlayer]} wins!`);
+        hasWon = true;
+      }
+      // Next player (skip winners)
+      let next = currentPlayer;
+      for (let i = 1; i <= playerNames.length; i++) {
+        const candidate = (currentPlayer + i) % playerNames.length;
+        if (!newWinners.includes(candidate)) {
+          next = candidate;
+          break;
+        }
+      }
+      setGameState(prev => ({
+        ...prev,
+        playerPositions: newPositions,
+        moveHistory: newMoveHistory,
+        isRolling: false,
+        hasWon: newWinners.length === playerNames.length,
+        isGameActive: newWinners.length < playerNames.length,
+        currentPlayer: next,
+        winners: newWinners
+      }));
+    }, 1500);
+  }, [gameState]);
+
+  const resetGame = useCallback(() => {
+    setRegisterOpen(true);
   }, []);
 
   const handlePositionUpdate = useCallback((newPosition: number) => {
-    setGameState(prev => ({
-      ...prev,
-      playerPosition: newPosition
-    }));
+    // Not used in multi-player mode
   }, []);
 
   return (
@@ -102,7 +127,7 @@ const Index = () => {
             Register
           </button>
           {/* RegisterModal controlled by local state */}
-          <RegisterModal open={isRegisterOpen} onClose={() => setRegisterOpen(false)} />
+          <RegisterModal open={isRegisterOpen} onClose={() => setRegisterOpen(false)} onRegister={handleRegister} />
         </div>
         <p className="text-xl text-blue-100 drop-shadow text-center mb-8">
           The classic Bikini Bottom board game adventure!
@@ -112,8 +137,10 @@ const Index = () => {
           {/* Game Board */}
           <div className="lg:col-span-3">
             <GameBoard 
-              playerPosition={gameState.playerPosition}
-              onPositionUpdate={handlePositionUpdate}
+              playerPositions={gameState.playerPositions}
+              currentPlayer={gameState.currentPlayer}
+              playerNames={gameState.playerNames}
+              winners={gameState.winners}
             />
           </div>
 
@@ -123,6 +150,8 @@ const Index = () => {
               onRoll={handleDiceRoll} 
               disabled={!gameState.isGameActive || gameState.isRolling}
               isRolling={gameState.isRolling}
+              currentPlayer={gameState.currentPlayer}
+              playerNames={gameState.playerNames}
             />
             
             <GameControls 
@@ -137,7 +166,8 @@ const Index = () => {
       <WinModal 
         isOpen={gameState.hasWon} 
         onNewGame={resetGame}
-        moveCount={gameState.moveHistory.length}
+        moveCount={gameState.moveHistory.reduce((a, b) => a + b.length, 0)}
+        winners={gameState.winners.map(i => gameState.playerNames[i])}
       />
     </div>
   );

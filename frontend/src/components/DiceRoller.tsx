@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -7,9 +6,11 @@ interface DiceRollerProps {
   onRoll: (value: number) => void;
   disabled: boolean;
   isRolling: boolean;
+  currentPlayer: number;
+  playerNames: string[];
 }
 
-export const DiceRoller = ({ onRoll, disabled, isRolling }: DiceRollerProps) => {
+export const DiceRoller = ({ onRoll, disabled, isRolling, currentPlayer, playerNames }: DiceRollerProps) => {
   const [diceValue, setDiceValue] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -40,7 +41,9 @@ export const DiceRoller = ({ onRoll, disabled, isRolling }: DiceRollerProps) => 
 
   return (
     <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-xl border-2 border-blue-200">
-      <h3 className="text-xl font-bold text-blue-800 mb-4 text-center">Roll the Dice!</h3>
+      <h3 className="text-xl font-bold text-blue-800 mb-4 text-center">
+        {playerNames[currentPlayer]}'s Turn
+      </h3>
       
       <div className="flex flex-col items-center space-y-4">
         <div
@@ -69,13 +72,13 @@ export const DiceRoller = ({ onRoll, disabled, isRolling }: DiceRollerProps) => 
               Rolling...
             </>
           ) : (
-            "🎲 Roll Dice"
+            `🎲 Roll Dice`
           )}
         </Button>
         
         {diceValue && !isAnimating && (
           <p className="text-center text-blue-700 font-semibold">
-            You rolled a {diceValue}!
+            {playerNames[currentPlayer]} rolled a {diceValue}!
           </p>
         )}
       </div>

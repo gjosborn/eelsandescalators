@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface GameBoardProps {
-  playerPosition: number;
-  onPositionUpdate: (position: number) => void;
+  playerPositions: number[];
+  currentPlayer: number;
+  playerNames: string[];
+  winners: number[];
 }
 
 // Escalators (go up) - start position: end position
@@ -35,45 +37,49 @@ const eels = {
   16: 6
 };
 
-export const GameBoard = ({ playerPosition, onPositionUpdate }: GameBoardProps) => {
+export const GameBoard = ({ playerPositions, currentPlayer, playerNames, winners }: GameBoardProps) => {
   // State to track the visual position of the player (for animations)
-  const [displayPosition, setDisplayPosition] = useState(playerPosition);
+  const [displayPositions, setDisplayPositions] = useState(playerPositions);
   // State to indicate if the player piece is currently moving/animating
   const [isMoving, setIsMoving] = useState(false);
 
   // Effect hook to handle player movement and eel/escalator interactions
   useEffect(() => {
     // Only trigger movement if the player position has actually changed
-    if (playerPosition !== displayPosition) {
+    if (playerPositions[currentPlayer] !== displayPositions[currentPlayer]) {
       setIsMoving(true);
       
       // First animation: move to the dice roll position
       setTimeout(() => {
-        setDisplayPosition(playerPosition);
+        const newPositions = [...displayPositions];
+        newPositions[currentPlayer] = playerPositions[currentPlayer];
+        setDisplayPositions(newPositions);
         
         // Check if the new position has an escalator or eel
-        const escalatorDestination = escalators[playerPosition as keyof typeof escalators];
-        const eelDestination = eels[playerPosition as keyof typeof eels];
+        const escalatorDestination = escalators[playerPositions[currentPlayer] as keyof typeof escalators];
+        const eelDestination = eels[playerPositions[currentPlayer] as keyof typeof eels];
         
         // If there's an escalator at this position, move up after a delay
         if (escalatorDestination) {
           setTimeout(() => {
-            setDisplayPosition(escalatorDestination);
-            onPositionUpdate(escalatorDestination);
+            const updatedPositions = [...newPositions];
+            updatedPositions[currentPlayer] = escalatorDestination;
+            setDisplayPositions(updatedPositions);
           }, 800); // 800ms delay before escalator activation
         } 
         // If there's an eel at this position, slide down after a delay
         else if (eelDestination) {
           setTimeout(() => {
-            setDisplayPosition(eelDestination);
-            onPositionUpdate(eelDestination);
+            const updatedPositions = [...newPositions];
+            updatedPositions[currentPlayer] = eelDestination;
+            setDisplayPositions(updatedPositions);
           }, 800); // 800ms delay before eel slide
         }
         
         setIsMoving(false);
       }, 300); // 300ms for initial movement animation
     }
-  }, [playerPosition, displayPosition, onPositionUpdate]);
+  }, [playerPositions, displayPositions, currentPlayer]);
 
   /**
    * Calculate the square number for a given row and column position
@@ -135,8 +141,29 @@ export const GameBoard = ({ playerPosition, onPositionUpdate }: GameBoardProps) 
     return escalators[squareNum as keyof typeof escalators] !== undefined;
   };
 
-  // Get the current visual position of the player for CSS positioning
-  const playerPos = getSquarePosition(displayPosition);
+  // Get the current visual positions of all players for CSS positioning
+  const playerPieces = playerPositions.map((pos, idx) => {
+    const playerPos = getSquarePosition(pos);
+    const isCurrent = idx === currentPlayer;
+    const isWinner = winners.includes(idx);
+    return pos > 0 ? (
+      <div
+        key={idx}
+        className={cn(
+          "absolute w-8 h-8 rounded-full border-4 flex items-center justify-center text-lg font-bold transition-all duration-500 z-20 shadow-lg",
+          isCurrent ? "bg-yellow-400 border-yellow-600 animate-bounce scale-110" : isWinner ? "bg-green-400 border-green-600" : "bg-blue-400 border-blue-600"
+        )}
+        style={{
+          left: `${(playerPos.col + 0.5) * (100 / 10)}%`,
+          top: `${(playerPos.row + 0.5) * (100 / 10)}%`,
+          transform: "translate(-50%, -50%)"
+        }}
+        title={playerNames[idx]}
+      >
+        {String.fromCodePoint(0x1F7E1 + idx)}
+      </div>
+    ) : null;
+  });
 
   return (
     <div className="bg-gradient-to-br from-yellow-200 to-yellow-300 p-6 rounded-2xl shadow-2xl border-4 border-yellow-400">
@@ -147,7 +174,7 @@ export const GameBoard = ({ playerPosition, onPositionUpdate }: GameBoardProps) 
             const squareNum = getSquareNumber(row, col);
             const isEel = hasEel(squareNum);
             const isEscalator = hasEscalator(squareNum);
-            const isPlayerHere = displayPosition === squareNum;
+            const isPlayerHere = displayPositions.includes(squareNum);
             
             return (
               <div
@@ -185,25 +212,8 @@ export const GameBoard = ({ playerPosition, onPositionUpdate }: GameBoardProps) 
           })
         )}
         
-        {/* Player piece - only show if not at starting position */}
-        {displayPosition > 0 && (
-          <div
-            className={cn(
-              "absolute w-8 h-8 bg-yellow-400 rounded-full border-4 border-yellow-600 flex items-center justify-center text-lg font-bold transition-all duration-500 z-20 shadow-lg",
-              // Add animation effects when moving
-              isMoving && "scale-110 animate-bounce"
-            )}
-            style={{
-              // Position using percentage-based CSS positioning
-              // Each grid cell is 10% of the container width/height
-              left: `${(playerPos.col + 0.5) * (100 / 10)}%`,
-              top: `${(playerPos.row + 0.5) * (100 / 10)}%`,
-              transform: "translate(-50%, -50%)" // Center the piece on the square
-            }}
-          >
-            🟡
-          </div>
-        )}
+        {/* Player pieces - dynamically generated for each player */}
+        {playerPieces}
         
         {/* Start position indicator */}
         <div className="absolute -bottom-8 left-4 bg-green-400 px-3 py-1 rounded-full text-white font-bold text-sm border-2 border-green-600">

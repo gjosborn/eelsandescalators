@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -12,9 +11,10 @@ interface WinModalProps {
   isOpen: boolean;
   onNewGame: () => void;
   moveCount: number;
+  winners: string[];
 }
 
-export const WinModal = ({ isOpen, onNewGame, moveCount }: WinModalProps) => {
+export const WinModal = ({ isOpen, onNewGame, moveCount, winners }: WinModalProps) => {
   const getPerformanceMessage = (moves: number) => {
     if (moves <= 10) return "🌟 Incredible! You're a true Bikini Bottom champion!";
     if (moves <= 20) return "🎉 Excellent! SpongeBob would be proud!";
@@ -31,7 +31,9 @@ export const WinModal = ({ isOpen, onNewGame, moveCount }: WinModalProps) => {
             🏆 Victory! 🏆
           </DialogTitle>
           <DialogDescription className="text-lg text-blue-700">
-            You've reached the top of the escalators!
+            {winners.length > 1
+              ? `Winners: ${winners.join(", ")}`
+              : `Winner: ${winners[0]}`}
           </DialogDescription>
         </DialogHeader>
         

@@ -1,16 +1,9 @@
 import React, { useState } from "react";
 
-type AuthResponse = {
-    access_token: string;
-    token_type: string;
-    user_id: number;
-};
-
-type AuthMode = "register" | "login";
-
 type RegisterModalProps = {
     open: boolean;
     onClose: () => void;
+    onRegister: (playerNames: string[]) => void;
 };
 
 const modalBackdropStyle: React.CSSProperties = {
@@ -47,58 +40,33 @@ const closeButtonStyle: React.CSSProperties = {
     color: "#888",
 };
 
-const RegisterModal: React.FC<RegisterModalProps> = ({ open, onClose }) => {
-    const [mode, setMode] = useState<AuthMode>("register");
-    const [username, setUsername] = useState("");
-    const [email, setEmail] = useState("");
-    const [displayName, setDisplayName] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState<string | null>(null);
+const RegisterModal: React.FC<RegisterModalProps> = ({ open, onClose, onRegister }) => {
+    const [numPlayers, setNumPlayers] = useState(2);
+    const [playerNames, setPlayerNames] = useState(["", ""]);
 
-    if (!open) return null;
+    // Update playerNames array when numPlayers changes
+    React.useEffect(() => {
+        setPlayerNames((prev) => {
+            const newArr = [...prev];
+            while (newArr.length < numPlayers) newArr.push("");
+            while (newArr.length > numPlayers) newArr.pop();
+            return newArr;
+        });
+    }, [numPlayers]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleNameChange = (idx: number, value: string) => {
+        setPlayerNames((prev) => {
+            const arr = [...prev];
+            arr[idx] = value;
+            return arr;
+        });
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setError(null);
-        setSuccess(null);
-        setLoading(true);
-
-        try {
-            let response: Response;
-            if (mode === "register") {
-                response = await fetch("/auth/register", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        username,
-                        email,
-                        password,
-                        display_name: displayName || undefined,
-                    }),
-                });
-            } else {
-                response = await fetch("/auth/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, password }),
-                });
-            }
-
-            if (!response.ok) {
-                const data = await response.json();
-                setError(data.detail || "Authentication failed");
-            } else {
-                const data: AuthResponse = await response.json();
-                setSuccess("Success! You are now logged in.");
-                // Store token as needed, e.g., localStorage.setItem("token", data.access_token)
-            }
-        } catch (err) {
-            setError("Network error");
-        } finally {
-            setLoading(false);
-        }
+        if (playerNames.some((n) => !n.trim())) return;
+        onRegister(playerNames);
+        onClose();
     };
 
     const handleBackdropClick = (e: React.MouseEvent) => {
@@ -107,94 +75,45 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ open, onClose }) => {
         }
     };
 
+    if (!open) return null;
     return (
         <div style={modalBackdropStyle} onClick={handleBackdropClick}>
             <div style={modalContentStyle}>
                 <button style={closeButtonStyle} onClick={onClose} aria-label="Close">&times;</button>
-                <h2>{mode === "register" ? "Register" : "Login"}</h2>
+                <h2>Register Players</h2>
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: 12 }}>
                         <label>
-                            Username
-                            <input
-                                type="text"
-                                value={username}
-                                required
-                                onChange={e => setUsername(e.target.value)}
+                            Number of Players
+                            <select
+                                value={numPlayers}
+                                onChange={e => setNumPlayers(Number(e.target.value))}
                                 style={{ width: "100%" }}
-                            />
+                            >
+                                {[2, 3, 4].map(n => (
+                                    <option key={n} value={n}>{n}</option>
+                                ))}
+                            </select>
                         </label>
                     </div>
-                    {mode === "register" && (
-                        <>
-                            <div style={{ marginBottom: 12 }}>
-                                <label>
-                                    Email
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        required
-                                        onChange={e => setEmail(e.target.value)}
-                                        style={{ width: "100%" }}
-                                    />
-                                </label>
-                            </div>
-                            <div style={{ marginBottom: 12 }}>
-                                <label>
-                                    Display Name (optional)
-                                    <input
-                                        type="text"
-                                        value={displayName}
-                                        onChange={e => setDisplayName(e.target.value)}
-                                        style={{ width: "100%" }}
-                                    />
-                                </label>
-                            </div>
-                        </>
-                    )}
-                    <div style={{ marginBottom: 12 }}>
-                        <label>
-                            Password
-                            <input
-                                type="password"
-                                value={password}
-                                required
-                                onChange={e => setPassword(e.target.value)}
-                                style={{ width: "100%" }}
-                            />
-                        </label>
-                    </div>
-                    {error && <div style={{ color: "red", marginBottom: 12 }}>{error}</div>}
-                    {success && <div style={{ color: "green", marginBottom: 12 }}>{success}</div>}
-                    <button type="submit" disabled={loading} style={{ width: "100%" }}>
-                        {loading ? "Please wait..." : mode === "register" ? "Register" : "Login"}
+                    {playerNames.map((name, idx) => (
+                        <div key={idx} style={{ marginBottom: 12 }}>
+                            <label>
+                                Player {idx + 1} Name
+                                <input
+                                    type="text"
+                                    value={name}
+                                    required
+                                    onChange={e => handleNameChange(idx, e.target.value)}
+                                    style={{ width: "100%" }}
+                                />
+                            </label>
+                        </div>
+                    ))}
+                    <button type="submit" style={{ width: "100%" }}>
+                        Start Game
                     </button>
                 </form>
-                <div style={{ marginTop: 16, textAlign: "center" }}>
-                    {mode === "register" ? (
-                        <span>
-                            Already have an account?{" "}
-                            <button
-                                type="button"
-                                onClick={() => setMode("login")}
-                                style={{ background: "none", border: "none", color: "#007bff", cursor: "pointer" }}
-                            >
-                                Login
-                            </button>
-                        </span>
-                    ) : (
-                        <span>
-                            Need an account?{" "}
-                            <button
-                                type="button"
-                                onClick={() => setMode("register")}
-                                style={{ background: "none", border: "none", color: "#007bff", cursor: "pointer" }}
-                            >
-                                Register
-                            </button>
-                        </span>
-                    )}
-                </div>
             </div>
         </div>
     );
