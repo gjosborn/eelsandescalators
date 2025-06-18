@@ -368,7 +368,42 @@ class EelsAndEscalatorsGUI:
                     if dist < min_dist:
                         min_dist = dist
                         closest = pos
-                self.players[self.dragging_player]['position'] = closest
+                #self.players[self.dragging_player]['position'] = closest
+                #self.update_player_positions()
+                
+                current_pos = self.players[self.dragging_player]['position']
+                target_pos = closest
+                rolled_value = self.dice_value
+
+                # Calculate the legal destination
+                expected_pos = current_pos + rolled_value
+                if expected_pos > 100:
+                    expected_pos = 100
+
+                # Apply escalator or eel movement
+                if expected_pos in self.escalators:
+                    expected_pos = self.escalators[expected_pos]
+                elif expected_pos in self.eels:
+                    expected_pos = self.eels[expected_pos]
+
+                # Only allow snapping if target matches expected
+                if target_pos == expected_pos:
+                    self.players[self.dragging_player]['position'] = target_pos
+
+                    # Check win condition
+                    if target_pos == 100:
+                        self.game_state = "game_over"
+                        self.winner = self.dragging_player
+                    else:
+                    # Advance to next player
+                        self.current_player = (self.current_player + 1) % self.num_players  
+
+                else:
+                    # Invalid drop — snap back to original spot
+                    x, y = self.get_board_coordinates(current_pos)
+                    self.players[self.dragging_player]['x'] = x
+                    self.players[self.dragging_player]['y'] = y
+
                 self.update_player_positions()
                 self.dragging_player = None
                 self.pending_move = False
