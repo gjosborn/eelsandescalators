@@ -104,6 +104,10 @@ class EelsAndEscalatorsGUI:
             self.player_buttons.append(
                 Button(700, 150 + i * 40, 100, 30, f"{i+2} Players", LIGHT_GRAY)
             )
+
+        self.eel_image = pygame.image.load("eel.png").convert_alpha()
+        self.eel_image = pygame.transform.scale(self.eel_image, (40, 40))
+        self.escalator_image = pygame.image.load("escalator.png").convert_alpha()
         
         self.setup_game()
     
@@ -193,7 +197,7 @@ class EelsAndEscalatorsGUI:
             
             # Draw escalator line
             pygame.draw.line(self.screen, BROWN, (start_x, start_y), (end_x, end_y), 8)
-            
+
             # Draw escalator steps
             steps = 5
             for i in range(1, steps):
@@ -225,9 +229,12 @@ class EelsAndEscalatorsGUI:
             
             if len(points) > 1:
                 pygame.draw.lines(self.screen, GREEN, False, points, 6)
-            
-            # Draw eel head and tail
-            pygame.draw.circle(self.screen, DARK_GREEN, (start_x, start_y), 10)
+
+            # Replace eel head with image
+            rect = self.eel_image.get_rect(center=(start_x, start_y))
+            self.screen.blit(self.eel_image, rect)
+
+            # Keep the tail as a small green dot
             pygame.draw.circle(self.screen, GREEN, (end_x, end_y), 6)
     
     def draw_players(self):
